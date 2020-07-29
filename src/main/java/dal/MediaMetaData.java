@@ -4,41 +4,52 @@ import com.tagtraum.jipes.math.*;
 
 import javax.sound.sampled.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
 public class MediaMetaData {
     int volume;
-    List<Float> freqArr = new ArrayList<Float>();
-    //float[] freqArr;
+    List<Float> freqArrDiscrete = new ArrayList<>();
+    List<List<Float>> freqArrTransformed = new ArrayList<>();
     int input = 42;
-    TargetDataLine targetDataLine;
     private static final float NORMALIZATION_FACTOR_2_BYTES = Short.MAX_VALUE + 1.0f;
 
 
     public MediaMetaData(){
 
     }
-    public List<Float> getFreqArr(){
-        updateFreqArr();
-        return freqArr;
+    public List<Float> getFreqArrDiscrete(){
+        updateFreqArrDiscrete();
+        return freqArrDiscrete;
     }
-    private void updateFreqArr(){
-        freqArr.clear();
+    public List<List<Float>> getFreqArrTransformed(){
+        updateFreqArrTransformed();
+        return freqArrTransformed;
+    }
+
+    private void updateFreqArrTransformed(){
+        freqArrTransformed.clear();
+        float[][] tempArr = getTransformed();
+        for(int i = 0; i < tempArr.length;i++){
+            List<Float> tempList = new ArrayList<>();
+            for(int j = 0; j < tempArr[i].length;j++){
+                tempList.add(tempArr[i][j]);
+            }
+            freqArrTransformed.add(tempList);
+        }
+    }
+
+
+    private void updateFreqArrDiscrete(){
+        freqArrDiscrete.clear();
         float[] tempArr = getSamples();
         for(int i = 0; i < tempArr.length;i++){
-            freqArr.add(tempArr[i]);
+            freqArrDiscrete.add(tempArr[i]);
         }
     }
 
     public int getVolume() {
-        updateVolume();
-        return volume;
-    }
-
-    public void updateVolume() {
-        this.volume = calculateRMSLevel(getSoundData());
+        return calculateRMSLevel(getSoundData());
     }
 
     /**
@@ -48,22 +59,20 @@ public class MediaMetaData {
         Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
         byte[] buffer = new byte[4096];
         Mixer currentMixer = AudioSystem.getMixer(mixerInfo[input]);
-        DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, getAudioFormat());
+//        DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, getAudioFormat());
         Line.Info targetDLInfo = new Line.Info(TargetDataLine.class);
-        targetDataLine = null;
-//        final int numberOfSamples = buffer.length / getAudioFormat().getFrameSize();
-//        final FFTFactory.JavaFFT fft = new FFTFactory.JavaFFT(numberOfSamples);
-        try {
-            targetDataLine = (TargetDataLine) AudioSystem.getLine(dataLineInfo);
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-        }
+//        targetDataLine = null;
+//        try {
+//            targetDataLine = (TargetDataLine) AudioSystem.getLine(dataLineInfo);
+//        } catch (LineUnavailableException e) {
+//            e.printStackTrace();
+//        }
+//
+//        targetDataLine.close();
 
-        targetDataLine.close();
-
-        dataLineInfo = new DataLine.Info(TargetDataLine.class, getAudioFormat());
+        DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, getAudioFormat());
         try {
-            targetDataLine = (TargetDataLine) currentMixer.getLine(dataLineInfo);
+            TargetDataLine targetDataLine = (TargetDataLine) currentMixer.getLine(dataLineInfo);
             targetDataLine.open(getAudioFormat());
             targetDataLine.start();
             buffer = new byte[4096];
@@ -77,13 +86,19 @@ public class MediaMetaData {
 
             targetDataLine.stop();
             targetDataLine.close();
-
-
         } catch (LineUnavailableException e1) {
             e1.printStackTrace();
+        } finally {
+
         }
         return buffer;
 
+    }
+
+    private float[][] getTransformed(){
+        final int numberOfSamples = getSoundData().length / getAudioFormat().getFrameSize();
+        final FFTFactory.JavaFFT fft = new FFTFactory.JavaFFT(numberOfSamples);
+        return fft.transform(getSamples());
     }
 
     private float[] getSamples(){
