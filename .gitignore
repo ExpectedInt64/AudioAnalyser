@@ -29,6 +29,4 @@ hs_err_pid*
 .idea/misc.xml
 .idea/uiDesigner.xml
 AudioAnalyser.iml
-pom.xml
-src/
 target/
