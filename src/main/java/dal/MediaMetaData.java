@@ -10,29 +10,48 @@ import java.util.List;
 public class MediaMetaData {
     int volume;
     List<Float> freqArrDiscrete = new ArrayList<>();
+    List<Float> freqArrRealPart = new ArrayList<>();
+    List<Float> freqArrImagPart = new ArrayList<>();
+    List<Double> freqArrMagnitudes = new ArrayList<>();
     List<List<Float>> freqArrTransformed = new ArrayList<>();
     int input = 42;
     private static final float NORMALIZATION_FACTOR_2_BYTES = Short.MAX_VALUE + 1.0f;
 
 
-    public MediaMetaData(){
+    public MediaMetaData() {
 
     }
-    public List<Float> getFreqArrDiscrete(){
+
+    public List<Float> getFreqArrDiscrete() {
         updateFreqArrDiscrete();
         return freqArrDiscrete;
     }
-    public List<List<Float>> getFreqArrTransformed(){
+
+    public List<Float> getFreqArrRealPart() {
+        updateFreqArrRealPart();
+        return freqArrRealPart;
+    }
+
+    public List<Float> getFreqArrImagPart() {
+        updateFreqArrImagPart();
+        return freqArrImagPart;
+    }
+
+    public List<List<Float>> getFreqArrTransformed() {
         updateFreqArrTransformed();
         return freqArrTransformed;
     }
+    public List<Double> getFreqArrMagnitudes() {
+        updateFreqArrMagnitudes();
+        return freqArrMagnitudes;
+    }
 
-    private void updateFreqArrTransformed(){
+    private void updateFreqArrTransformed() {
         freqArrTransformed.clear();
         float[][] tempArr = getTransformed();
-        for(int i = 0; i < tempArr.length;i++){
+        for (int i = 0; i < tempArr.length; i++) {
             List<Float> tempList = new ArrayList<>();
-            for(int j = 0; j < tempArr[i].length;j++){
+            for (int j = 0; j < tempArr[i].length; j++) {
                 tempList.add(tempArr[i][j]);
             }
             freqArrTransformed.add(tempList);
@@ -40,11 +59,35 @@ public class MediaMetaData {
     }
 
 
-    private void updateFreqArrDiscrete(){
+    private void updateFreqArrDiscrete() {
         freqArrDiscrete.clear();
         float[] tempArr = getSamples();
-        for(int i = 0; i < tempArr.length;i++){
+        for (int i = 0; i < tempArr.length; i++) {
             freqArrDiscrete.add(tempArr[i]);
+        }
+    }
+
+    private void updateFreqArrRealPart() {
+        freqArrRealPart.clear();
+        float[] tempArr = getTransformed()[0];
+        for (int i = 0; i < tempArr.length; i++) {
+            freqArrRealPart.add(tempArr[i]);
+        }
+    }
+
+    private void updateFreqArrImagPart() {
+        freqArrImagPart.clear();
+        float[] tempArr = getTransformed()[1];
+        for (int i = 0; i < tempArr.length; i++) {
+            freqArrImagPart.add(tempArr[i]);
+        }
+    }
+
+    private void updateFreqArrMagnitudes(){
+        freqArrMagnitudes.clear();
+        double[] tempArr = toMagnitudes(getTransformed()[0], getTransformed()[1]);
+        for(int i = 0; i < tempArr.length; i++){
+            freqArrMagnitudes.add(tempArr[i]);
         }
     }
 
@@ -95,14 +138,31 @@ public class MediaMetaData {
 
     }
 
-    private float[][] getTransformed(){
-        final int numberOfSamples = getSoundData().length / getAudioFormat().getFrameSize();
+    private float[][] getTransformed() {
+//        final int numberOfSamples = getSoundData().length / getAudioFormat().getFrameSize();
+        final int numberOfSamples = 256 / 1;
+        System.out.println(getAudioFormat().getFrameSize() + " " + numberOfSamples);
         final FFTFactory.JavaFFT fft = new FFTFactory.JavaFFT(numberOfSamples);
+
         return fft.transform(getSamples());
     }
 
-    private float[] getSamples(){
+    private float[] getSamplesA() {
         final float[] samples = decode(getSoundData(), getAudioFormat());
+        return samples;
+    }
+
+    final static float SPPA = 10;
+    final static float SPPB = 13;
+    final static float AMPA = 0.8f;
+    final static float AMPB = 1.0f;
+    final static int N = 256;
+
+    private float[] getSamples() {
+        float[] samples = new float[N];
+        for (int i = 0; i < N; i++) {
+            samples[i] = (float) (AMPA * Math.sin(2 * Math.PI * i / SPPA) + AMPB * Math.sin(2 * Math.PI * i / SPPB));
+        }
         return samples;
     }
 
@@ -173,7 +233,6 @@ public class MediaMetaData {
         double averageMeanSquare = sumMeanSquare / audioData.length;
         return (int) (Math.pow(averageMeanSquare, 0.5d) + 0.5);
     }
-
 
 
 }
