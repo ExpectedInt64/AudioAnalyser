@@ -61,7 +61,7 @@ public class MediaMetaData {
 
     private void updateFreqArrDiscrete() {
         freqArrDiscrete.clear();
-        float[] tempArr = getSamples();
+        float[] tempArr = getSamplesA();
         for (int i = 0; i < tempArr.length; i++) {
             freqArrDiscrete.add(tempArr[i]);
         }
@@ -139,12 +139,12 @@ public class MediaMetaData {
     }
 
     private float[][] getTransformed() {
-//        final int numberOfSamples = getSoundData().length / getAudioFormat().getFrameSize();
-        final int numberOfSamples = 256 / 1;
+        final int numberOfSamples = getSoundData().length / getAudioFormat().getFrameSize();
+        //final int numberOfSamples = 256 / 1;
         System.out.println(getAudioFormat().getFrameSize() + " " + numberOfSamples);
         final FFTFactory.JavaFFT fft = new FFTFactory.JavaFFT(numberOfSamples);
 
-        return fft.transform(getSamples());
+        return fft.transform(getSamplesA());
     }
 
     private float[] getSamplesA() {
